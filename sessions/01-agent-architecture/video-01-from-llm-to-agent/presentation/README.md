@@ -9,6 +9,11 @@ no package installation or Internet connection.
 
 - Use **Left / Right**, **Page Up / Page Down**, **Home / End**, or the on-page
   controls to navigate.
+- Select **Original slides** to present the supplied slide images. Select
+  **Designed slides** to return to the HTML deck. Both modes use the same
+  navigation, progress indicator, and fullscreen control.
+- The original-image mode contains the supplied pages **00** and **02–12**;
+  source page **01** was not provided.
 - Select **Fullscreen** when presenting.
 - Use the browser print dialog to print or save a PDF.
 
@@ -26,5 +31,7 @@ named by the page number printed on each image. The set contains pages 00 and
 - `agent-architecture.png` — conceptual runtime and agent illustration.
 - `tool-execution.png` — tool-execution illustration.
 
-The supplied slide images remain unchanged. The English lesson README uses the
-architecture illustration alongside runnable source maps and diagrams.
+The supplied slide images remain unchanged. Open this file in a browser to use
+the interactive deck; GitHub's source-code view displays the HTML file rather
+than running it. The English lesson README uses the architecture illustration
+alongside runnable source maps and diagrams.
