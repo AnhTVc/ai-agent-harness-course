@@ -1,0 +1,22 @@
+# Keep local credentials out of source control.
+**/.env
+
+# Exclude generated traces, coverage data, and test output.
+**/artifacts/
+**/.coverage
+**/.coverage.*
+**/coverage.xml
+**/htmlcov/
+**/.pytest_cache/
+**/test-results/
+**/playwright-report/
+
+# Exclude local Python and frontend environments.
+**/__pycache__/
+**/.venv/
+**/node_modules/
+*.py[cod]
+
+# Exclude operating-system and transient log files.
+.DS_Store
+*.log
