@@ -1,0 +1,614 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5faf8">
+  <title>Từ LLM đến AI Agent | From LLM to AI Agent</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --ink: #082956;
+      --ink-soft: #31577d;
+      --muted: #55718d;
+      --paper: #ffffff;
+      --mint: #e8f8ef;
+      --mint-strong: #d2f2df;
+      --green: #19b86b;
+      --teal: #00a99b;
+      --cyan: #28bfd0;
+      --line: #bce6d4;
+      --shadow: 0 28px 80px #092d4d1a;
+      --radius: 1.5cqw;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { width: 100%; height: 100%; margin: 0; }
+    body {
+      color: var(--ink);
+      background:
+        radial-gradient(ellipse at 12% 12%, #dbf5e9 0, transparent 30%),
+        radial-gradient(ellipse at 88% 86%, #def7f4 0, transparent 29%),
+        #f0f5f3;
+      font-family: "Avenir Next", "Segoe UI", Arial, sans-serif;
+      overflow: hidden;
+    }
+    button { font: inherit; }
+    .presentation {
+      min-height: 100svh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      padding: 18px 12px;
+    }
+    .deck {
+      position: relative;
+      width: min(96vw, 1500px);
+      max-height: calc(100svh - 104px);
+      aspect-ratio: 16 / 9;
+      container-type: inline-size;
+      overflow: hidden;
+      border: 1px solid #ffffff;
+      border-radius: 20px;
+      background: var(--paper);
+      box-shadow: var(--shadow);
+      isolation: isolate;
+    }
+    .slide {
+      position: absolute;
+      inset: 0;
+      display: none;
+      grid-template-rows: auto 1fr auto;
+      gap: 2.1cqw;
+      padding: 4.1cqw 5cqw 2.8cqw;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 93% 7%, #dff7f2 0, transparent 19%),
+        radial-gradient(circle at 6% 100%, #eef9f4 0, transparent 24%),
+        var(--paper);
+    }
+    .slide.active { display: grid; animation: slide-in .28s ease-out both; }
+    .slide::before {
+      content: "";
+      position: absolute;
+      z-index: -1;
+      inset: 0;
+      opacity: .42;
+      pointer-events: none;
+      background-image: linear-gradient(#d8ece61a 1px, transparent 1px), linear-gradient(90deg, #d8ece61a 1px, transparent 1px);
+      background-size: 4.2cqw 4.2cqw;
+      mask-image: linear-gradient(135deg, #000 0, transparent 55%);
+    }
+    @keyframes slide-in { from { opacity: .3; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; scroll-behavior: auto !important; } }
+
+    .masthead, .slide-foot { display: flex; align-items: center; justify-content: space-between; gap: 1rem; }
+    .brand { display: flex; align-items: center; gap: .7cqw; font-weight: 800; letter-spacing: .02em; }
+    .brand-mark {
+      display: grid; place-items: center; width: 2.8cqw; aspect-ratio: 1; min-width: 24px;
+      border-radius: .35cqw; color: white; font-size: .96cqw; font-weight: 900; letter-spacing: -.08em;
+      background: linear-gradient(145deg, #51d479, #00a698 65%, #08738f);
+      box-shadow: 0 6px 16px #00a69833;
+    }
+    .brand-name { font-size: 1.1cqw; line-height: 1.1; }
+    .brand-name small { display: block; margin-top: .18em; color: var(--muted); font-size: .68em; font-weight: 600; letter-spacing: .04em; }
+    .unit-tag, .eyebrow { color: var(--teal); font-size: .92cqw; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; }
+    .unit-tag { padding: .65em 1em; border: 1px solid transparent; border-radius: .32cqw; color: white; background: linear-gradient(100deg, var(--green), var(--teal)); }
+    .slide-foot { color: #698196; font-size: .82cqw; letter-spacing: .04em; }
+    .slide-foot .foot-line { flex: 1; height: 1px; margin: 0 1.1em; background: linear-gradient(90deg, #51c7a6, #b6dcea); }
+    .slide-foot .page { color: var(--ink); font-weight: 800; }
+    .title-block { position: relative; z-index: 1; }
+    h1, h2, h3, p { margin: 0; }
+    h1, h2, h3 { font-family: "Avenir Next Condensed", "Avenir Next", "Arial Narrow", sans-serif; font-weight: 800; }
+    h1 { max-width: 17ch; font-size: clamp(2rem, 4.6cqw, 4.9rem); line-height: .99; letter-spacing: -.035em; text-transform: uppercase; }
+    h2 { max-width: 24ch; font-size: clamp(1.65rem, 3.45cqw, 3.7rem); line-height: 1.03; letter-spacing: -.03em; text-transform: uppercase; }
+    h3 { font-size: clamp(.95rem, 1.55cqw, 1.45rem); line-height: 1.1; letter-spacing: -.015em; }
+    .en-title { display: block; margin-top: .28em; color: var(--teal); font-family: "Avenir Next", "Segoe UI", Arial, sans-serif; font-size: .48em; line-height: 1.15; letter-spacing: -.01em; font-weight: 700; text-transform: none; }
+    .en { display: block; margin-top: .28em; color: var(--muted); font-size: .78em; line-height: 1.35; font-weight: 500; letter-spacing: 0; }
+    .lede { max-width: 62ch; margin-top: 1.1em; color: var(--ink-soft); font-size: clamp(.82rem, 1.38cqw, 1.35rem); line-height: 1.45; }
+    .pair { line-height: 1.2; }
+    .pair small { display: block; margin-top: .32em; color: var(--muted); font-size: .78em; line-height: 1.3; font-weight: 500; }
+    .body-copy { color: var(--ink-soft); font-size: clamp(.75rem, 1.13cqw, 1.1rem); line-height: 1.45; }
+    .body-copy .en { font-size: .82em; }
+    .accent { color: var(--teal); }
+    .green { color: #168858; }
+    .muted { color: var(--muted); }
+    .pill { display: inline-flex; align-items: center; gap: .45em; padding: .55em .85em; border-radius: 99px; background: var(--mint); color: var(--ink); font-size: .84cqw; font-weight: 700; }
+    .pill::before { content: ""; width: .55em; aspect-ratio: 1; border-radius: 50%; background: linear-gradient(135deg, var(--green), var(--cyan)); }
+    .callout { display: flex; align-items: center; gap: 1.1em; padding: 1em 1.2em; border: 1px solid #a8e0cb; border-radius: 1cqw; background: linear-gradient(110deg, #effbf5, #f7fcfa); }
+    .callout-bar { flex: 0 0 .28em; align-self: stretch; border-radius: 10px; background: linear-gradient(var(--green), var(--cyan)); }
+    .callout p { color: var(--ink); font-size: clamp(.85rem, 1.35cqw, 1.28rem); line-height: 1.35; font-weight: 700; }
+    .callout p small { display: block; margin-top: .35em; color: var(--muted); font-size: .78em; font-weight: 500; }
+    .node { position: relative; padding: 1.3cqw; border: 1px solid var(--line); border-radius: 1.05cqw; background: #ffffffeb; box-shadow: 0 9px 24px #0c44510d; }
+    .node strong { display: block; font-size: 1.2cqw; line-height: 1.1; }
+    .node small { display: block; margin-top: .48em; color: var(--muted); font-size: .9cqw; line-height: 1.35; }
+    .node-number { display: inline-grid; place-items: center; width: 2em; height: 2em; margin-bottom: .55em; border-radius: .6em; background: var(--mint-strong); color: #078472; font-size: 1cqw; font-weight: 850; }
+    .icon-box { display: grid; place-items: center; width: 4.6cqw; aspect-ratio: 1; min-width: 42px; border-radius: 1.1cqw; color: var(--teal); background: linear-gradient(145deg, #e2faef, #e4f8fa); }
+    .icon-box svg { width: 60%; height: 60%; }
+    .core-dot { display: grid; place-items: center; aspect-ratio: 1; border-radius: 25%; color: #fff; background: linear-gradient(145deg, #45d67c, #00a7a3 70%, #14788b); font-weight: 900; box-shadow: 0 14px 32px #00a78c33; }
+    .arrow { color: var(--teal); font-size: 2.4cqw; font-weight: 300; text-align: center; }
+    .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1.2cqw; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.2cqw; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1cqw; }
+    .stack { display: grid; gap: 1cqw; }
+
+    /* Cover */
+    .cover { color: var(--ink); background: radial-gradient(ellipse at 84% 48%, #d8f7e6 0, transparent 34%), radial-gradient(ellipse at 58% 90%, #e5f8f5 0, transparent 28%), #fff; }
+    .cover::before { opacity: .24; background-image: linear-gradient(#8bd8c51a 1px, transparent 1px), linear-gradient(90deg, #8bd8c51a 1px, transparent 1px); mask-image: linear-gradient(135deg, #000 0, transparent 60%); }
+    .cover .brand-name small, .cover .slide-foot { color: var(--muted); }
+    .cover .unit-tag { color: white; border-color: transparent; background: linear-gradient(100deg, var(--green), var(--teal)); }
+    .cover .eyebrow { color: #13976d; }
+    .cover .en-title { color: var(--teal); }
+    .cover .lede { color: var(--ink-soft); }
+    .cover .slide-foot .foot-line { background: linear-gradient(90deg, var(--green), var(--cyan)); }
+    .cover-grid { display: grid; grid-template-columns: 1.03fr .97fr; align-items: center; gap: 2cqw; min-height: 0; }
+    .cover h1 { max-width: 12ch; font-size: clamp(2.4rem, 6.1cqw, 6.4rem); }
+    .cover .lede { max-width: 48ch; }
+    .cover-visual { position: relative; display: grid; place-items: center; min-height: 27cqw; }
+    .hero-art { display: block; width: 112%; max-height: 34cqw; object-fit: contain; filter: drop-shadow(0 18px 24px #078b7620); }
+    .orbit { position: absolute; width: 25cqw; aspect-ratio: 1; border: 1px solid #51dbbc80; border-radius: 50%; transform: rotate(-26deg) scaleY(.72); box-shadow: 0 0 0 2.2cqw #35cba510, 0 0 0 4.4cqw #35cba508; }
+    .orbit::before, .orbit::after { content: ""; position: absolute; top: 50%; left: -1.6%; width: 3.2%; aspect-ratio: 1; border-radius: 50%; background: #6df4c4; box-shadow: 0 0 24px #6df4c4; }
+    .orbit::after { left: auto; right: -1.6%; background: #39d4e5; box-shadow: 0 0 24px #39d4e5; }
+    .core-cube { position: relative; display: grid; place-items: center; width: 15cqw; aspect-ratio: 1; transform: rotate(45deg); border: 1px solid #b5fff07a; border-radius: 2.3cqw; background: linear-gradient(135deg, #5ee1a7c9, #009facc7 62%, #083d6b); box-shadow: 22px 25px 0 #061d3480, 0 0 80px #16d5b755; }
+    .core-cube span { transform: rotate(-45deg); color: white; font-size: 3.2cqw; font-weight: 900; letter-spacing: -.08em; }
+    .orbit-label { position: absolute; padding: .65em .85em; border: 1px solid #8cf4d279; border-radius: 99px; color: #e9fff8; background: #092942b8; font-size: .85cqw; font-weight: 700; box-shadow: 0 8px 26px #00172344; }
+    .orbit-label small { display: block; margin-top: .18em; color: #abe3d8; font-size: .8em; font-weight: 500; }
+    .label-context { top: 7%; left: -4%; }
+    .label-tools { right: -2%; top: 25%; }
+    .label-runtime { bottom: 6%; left: 4%; }
+    .label-environment { right: 0; bottom: 11%; }
+
+    /* Slide 2 */
+    .course-map { align-content: center; }
+    .course-map .node { min-height: 16cqw; padding: 1.4cqw; border-top: .32cqw solid var(--green); }
+    .course-map .node:nth-child(even) { border-top-color: var(--cyan); }
+    .course-map .node strong { font-size: 1.35cqw; }
+    .course-map .unit-number { color: #139975; font-size: 2.7cqw; font-weight: 900; letter-spacing: -.06em; }
+    .course-note { margin-top: 1.4cqw; }
+    /* Slide 3 */
+    .video-card { display: grid; grid-template-columns: .18fr 1fr; gap: 1.4cqw; align-items: center; min-height: 13cqw; padding: 1.6cqw; border: 1px solid var(--line); border-radius: 1.2cqw; background: linear-gradient(110deg, #f1fbf5, #fff 72%); }
+    .video-card:nth-child(2) { background: linear-gradient(110deg, #eaf8fa, #fff 72%); }
+    .video-no { color: var(--teal); font-size: 4cqw; line-height: .9; font-weight: 900; letter-spacing: -.07em; }
+    .video-card h3 { font-size: 1.7cqw; }
+    .video-card p { margin-top: .5em; color: var(--ink-soft); font-size: 1cqw; line-height: 1.4; }
+    .video-card p small { display: block; margin-top: .24em; color: var(--muted); font-size: .82em; }
+    /* Slide 4 */
+    .transition-grid { display: grid; grid-template-columns: .76fr .16fr 1.3fr; align-items: center; gap: 1.2cqw; }
+    .llm-card { display: grid; place-items: center; min-height: 16cqw; text-align: center; background: #f5fafb; }
+    .llm-card .core-dot { display: grid; place-items: center; width: 7cqw; aspect-ratio: 1; margin: 1cqw 0; border-radius: 2cqw; color: white; background: linear-gradient(145deg, #45d67c, #00a7a3 70%, #14788b); font-size: 2.5cqw; font-weight: 900; box-shadow: 0 14px 32px #00a78c33; }
+    .agent-card { padding: 1.5cqw; border: 1px solid #a6dfcd; border-radius: 1.1cqw; background: linear-gradient(135deg, #eefaf4, #fff 70%); }
+    .agent-card-head { display: flex; align-items: center; gap: 1cqw; margin-bottom: 1.2cqw; }
+    .agent-card-head .core-dot { flex: 0 0 4cqw; display: grid; place-items: center; width: 4cqw; aspect-ratio: 1; border-radius: 1cqw; color: white; background: linear-gradient(145deg, #42d276, #00a6a2 70%, #14788b); font-size: 1.2cqw; font-weight: 900; }
+    .agent-card-body { display: grid; grid-template-columns: 1.05fr .95fr; gap: .6cqw; align-items: center; }
+    .architecture-art { display: block; width: 100%; max-height: 13cqw; object-fit: contain; filter: drop-shadow(0 12px 18px #078b7620); }
+    .agent-parts { display: grid; grid-template-columns: repeat(2, 1fr); gap: .65cqw; }
+    .agent-parts div { padding: .72cqw .85cqw; border-left: .23cqw solid var(--teal); background: #fff; font-size: .88cqw; font-weight: 750; }
+    .agent-parts small { display: block; margin-top: .22em; color: var(--muted); font-size: .82em; font-weight: 500; }
+    .transition-caption { margin-top: 1.3cqw; text-align: center; }
+    /* Slide 5 */
+    .io-row { display: grid; grid-template-columns: 1fr .22fr 1fr .22fr 1fr; align-items: center; gap: .7cqw; }
+    .io-card { min-height: 15cqw; padding: 1.4cqw; }
+    .io-card h3 { margin-bottom: 1cqw; }
+    .io-list { display: grid; gap: .55cqw; color: var(--ink-soft); font-size: .93cqw; }
+    .io-list span { padding: .55em .7em; border-radius: .6em; background: #f1f8f6; }
+    .limitations { align-self: end; display: grid; grid-template-columns: repeat(3, 1fr); gap: .7cqw; }
+    .limit { padding: .8cqw 1cqw; border: 1px solid #d4e8e1; border-radius: .8cqw; background: #fff; font-size: .9cqw; font-weight: 700; line-height: 1.25; }
+    .limit small { display: block; margin-top: .25em; color: var(--muted); font-size: .8em; font-weight: 500; }
+    /* Slide 6 */
+    .compare-card { display: flex; flex-direction: column; gap: .7cqw; min-height: 22cqw; padding: 1.35cqw; border: 1px solid var(--line); border-radius: 1cqw; background: #ffffffd9; }
+    .compare-card.featured { border-color: #68c9ac; background: linear-gradient(150deg, #e9f9f1, #fff 67%); box-shadow: 0 12px 30px #1baf8212; }
+    .compare-card h3 { font-size: 1.55cqw; }
+    .compare-tagline { color: var(--teal); font-size: .83cqw; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; }
+    .mini-flow { display: flex; align-items: center; justify-content: center; gap: .45cqw; min-height: 4cqw; margin: .3cqw 0; color: var(--ink); font-size: .9cqw; font-weight: 750; }
+    .mini-flow b { color: var(--teal); font-size: 1.3cqw; }
+    .compare-card p { color: var(--ink-soft); font-size: .88cqw; line-height: 1.4; }
+    .compare-card p small { display: block; margin-top: .28em; color: var(--muted); font-size: .83em; }
+    /* Slide 7 */
+    .equation { display: grid; grid-template-columns: 1.1fr .18fr repeat(5, 1fr); align-items: stretch; gap: .55cqw; }
+    .equation .eq { display: grid; place-content: center; color: var(--teal); font-size: 2.3cqw; font-weight: 600; }
+    .equation-part { display: grid; align-content: center; gap: .55cqw; min-height: 10cqw; padding: .9cqw; border: 1px solid var(--line); border-radius: .9cqw; background: white; text-align: center; }
+    .equation-part:first-child { border-color: #69d6af; background: #ecfbf3; }
+    .equation-part strong { font-size: 1.12cqw; }
+    .equation-part small { color: var(--muted); font-size: .78cqw; line-height: 1.3; }
+    .equation-part .symbol { display: grid; place-items: center; margin: auto; width: 2.7cqw; aspect-ratio: 1; border-radius: .8cqw; color: var(--teal); background: var(--mint); font-size: 1.25cqw; font-weight: 900; }
+    /* Slide 8 */
+    .architecture { position: relative; display: grid; grid-template-columns: 1fr 1.2fr 1fr; grid-template-rows: auto 1fr auto; align-items: center; gap: 1.1cqw; padding: 1.2cqw 1.3cqw; border: 1px solid #cee9df; border-radius: 1.3cqw; background: linear-gradient(145deg, #f4fbf7, #fff 58%, #eef9fa); }
+    .architecture .node { padding: .9cqw; text-align: center; }
+    .architecture .node strong { font-size: 1.02cqw; }
+    .architecture .node small { font-size: .76cqw; }
+    .arch-app { grid-column: 2; grid-row: 1; }
+    .arch-llm { grid-column: 1; grid-row: 2; }
+    .arch-runtime { grid-column: 2; grid-row: 2; border-color: #41b997; background: linear-gradient(135deg,#dff8ec,#f5fffb); box-shadow: 0 12px 32px #008e7330; }
+    .arch-tools { grid-column: 3; grid-row: 2; }
+    .arch-context { grid-column: 1 / 2; grid-row: 3; }
+    .arch-env { grid-column: 3; grid-row: 3; }
+    .arch-connector { position: absolute; color: var(--teal); font-size: 1.25cqw; font-weight: 750; }
+    .conn-app { top: 27%; left: 49%; transform: translateX(-50%); }
+    .conn-llm { top: 49%; left: 28%; }
+    .conn-tools { top: 49%; right: 26%; }
+    .arch-caption { margin-top: .2cqw; text-align: center; color: var(--muted); font-size: .78cqw; }
+    .arch-caption small { display: block; margin-top: .22em; font-size: .9em; }
+    /* Slide 9 */
+    .loop-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: .8cqw; align-content: center; }
+    .loop-step { position: relative; min-height: 8.7cqw; padding: 1cqw; border: 1px solid var(--line); border-radius: .95cqw; background: #fff; }
+    .loop-step .step-n { display: inline-grid; place-items: center; width: 1.9em; height: 1.9em; margin-bottom: .55em; border-radius: 50%; color: white; background: linear-gradient(145deg, var(--green), var(--teal)); font-size: .85cqw; font-weight: 850; }
+    .loop-step strong { display: block; font-size: 1.08cqw; line-height: 1.15; }
+    .loop-step small { display: block; margin-top: .35em; color: var(--muted); font-size: .77cqw; line-height: 1.3; }
+    .loop-step:not(:nth-child(4)):not(:nth-child(8))::after { content: "→"; position: absolute; top: 42%; right: -.85cqw; z-index: 2; color: var(--teal); font-size: 1.35cqw; font-weight: 800; }
+    .loop-step:nth-child(4)::after { content: "↓"; position: absolute; right: 48%; bottom: -1.45cqw; z-index: 2; color: var(--teal); font-size: 1.25cqw; font-weight: 800; }
+    .loop-step:nth-child(5)::after, .loop-step:nth-child(6)::after, .loop-step:nth-child(7)::after { content: "←"; right: auto; left: -.85cqw; }
+    .loop-step:nth-child(5) { grid-column: 4; }
+    .loop-step:nth-child(6) { grid-column: 3; }
+    .loop-step:nth-child(7) { grid-column: 2; }
+    .loop-step:nth-child(8) { grid-column: 1; }
+    .loop-step.end { border-color: #70d5ad; background: #eafaf2; }
+    .loop-rule { color: var(--ink-soft); font-size: .85cqw; text-align: center; }
+    .loop-rule small { display: block; margin-top: .2em; color: var(--muted); font-size: .9em; }
+    /* Slide 10 */
+    .react-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1.25cqw; align-items: stretch; }
+    .react-card { min-height: 16cqw; padding: 1.45cqw; border: 1px solid var(--line); border-radius: 1.15cqw; background: white; }
+    .react-card .step-no { color: #15a981; font-size: 3.3cqw; line-height: .9; font-weight: 900; letter-spacing: -.08em; }
+    .react-card h3 { margin-top: .8em; font-size: 1.45cqw; }
+    .react-card p { margin-top: .65em; color: var(--ink-soft); font-size: .95cqw; line-height: 1.4; }
+    .react-card p small { display: block; margin-top: .3em; color: var(--muted); font-size: .82em; }
+    .react-arrow { display: grid; place-items: center; margin-top: .7cqw; color: var(--teal); font-size: 2.2cqw; }
+    /* Slide 11 */
+    .tool-layout { display: grid; grid-template-columns: 1.08fr .92fr; align-items: center; gap: 1.8cqw; }
+    .code-panel { overflow: hidden; border: 1px solid #177e82; border-radius: 1cqw; color: #d9f6ef; background: #0b2942; box-shadow: 0 12px 32px #08243e28; }
+    .code-head { display: flex; justify-content: space-between; padding: .8cqw 1cqw; color: #9cebd0; border-bottom: 1px solid #ffffff20; font-size: .82cqw; font-weight: 750; }
+    pre { margin: 0; padding: 1.3cqw 1.4cqw; overflow: auto; color: #e4f3f0; font: 1.02cqw/1.65 ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .json-key { color: #5bdad0; }
+    .json-string { color: #f4db74; }
+    .tool-steps { display: grid; gap: .65cqw; }
+    .tool-side { display: grid; gap: .25cqw; }
+    .tool-art { display: block; width: 100%; height: 9.8cqw; object-fit: contain; filter: drop-shadow(0 10px 16px #078b7620); }
+    .tool-step { display: grid; grid-template-columns: 2.1cqw 1fr; align-items: center; gap: .75cqw; padding: .7cqw .8cqw; border-bottom: 1px solid #d9eae4; }
+    .tool-step b { display: grid; place-items: center; width: 2cqw; aspect-ratio: 1; border-radius: 50%; color: #087d72; background: #def7ec; font-size: .85cqw; }
+    .tool-step strong { display: block; font-size: .94cqw; }
+    .tool-step small { display: block; margin-top: .15em; color: var(--muted); font-size: .75cqw; }
+    /* Slide 12 */
+    .demo-flow { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1cqw; align-items: stretch; }
+    .demo-step { position: relative; min-height: 18cqw; padding: 1.2cqw; border: 1px solid var(--line); border-radius: 1cqw; background: #fff; }
+    .demo-step:not(:last-child)::after { content: "›"; position: absolute; z-index: 2; top: 42%; right: -.8cqw; color: var(--green); font-size: 2.4cqw; font-weight: 800; }
+    .demo-step .number { color: var(--teal); font-size: 2.6cqw; line-height: 1; font-weight: 900; }
+    .demo-step h3 { margin-top: .75em; font-size: 1.2cqw; }
+    .demo-step p { margin-top: .65em; color: var(--ink-soft); font-size: .88cqw; line-height: 1.4; }
+    .demo-step p small { display: block; margin-top: .28em; color: var(--muted); font-size: .82em; }
+    .demo-step:last-child { border-color: #72d8b0; background: linear-gradient(145deg,#ebfaf2,#fff); }
+    .trace-line { display: flex; align-items: center; justify-content: space-between; gap: .55cqw; margin-top: 1.1cqw; padding: .8cqw 1cqw; border-radius: .75cqw; color: #e5f7f0; background: #0a2a45; font: .78cqw ui-monospace, SFMono-Regular, Menlo, monospace; }
+    .trace-line span { color: #74e5bd; }
+    .trace-line b { color: #58c9d6; font-size: 1.2em; }
+
+    .controls { display: flex; align-items: center; justify-content: center; gap: 10px; width: min(96vw, 1500px); color: var(--ink-soft); }
+    .control-btn { min-height: 38px; padding: .55em .9em; border: 1px solid #c8dcd6; border-radius: 99px; color: var(--ink); background: #ffffffb8; font-size: 12px; font-weight: 700; cursor: pointer; transition: background .2s ease, border-color .2s ease, transform .2s ease; }
+    .control-btn:hover { border-color: #70c9a9; background: white; transform: translateY(-1px); }
+    .control-btn:focus-visible, .dot:focus-visible { outline: 3px solid #00a69b; outline-offset: 3px; }
+    .control-btn:disabled { opacity: .45; cursor: not-allowed; transform: none; }
+    .progress-wrap { display: flex; align-items: center; gap: .8em; width: min(35vw, 380px); }
+    .progress-track { flex: 1; height: 5px; overflow: hidden; border-radius: 99px; background: #cedbd7; }
+    .progress-fill { width: 8.333%; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--green), var(--cyan)); transition: width .25s ease; }
+    .counter { min-width: 58px; color: var(--ink); font-size: 12px; font-weight: 800; text-align: center; }
+    .dots { display: flex; align-items: center; gap: 5px; }
+    .dot { width: 9px; height: 9px; padding: 0; border: 0; border-radius: 50%; background: #bdcec9; cursor: pointer; transition: transform .2s, background .2s; }
+    .dot[aria-current="step"] { transform: scale(1.35); background: var(--teal); }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+
+    @media (max-width: 760px) {
+      .presentation { gap: 9px; padding: 10px 5px; }
+      .deck { width: 98vw; max-height: calc(100svh - 83px); border-radius: 10px; }
+      .slide { padding: 4cqw 4.2cqw 2.8cqw; gap: 2.2cqw; }
+      .brand-name { font-size: 1.5cqw; }
+      .brand-mark { font-size: 1.6cqw; }
+      .unit-tag, .eyebrow { font-size: 1.15cqw; }
+      .slide-foot { font-size: 1.05cqw; }
+      .body-copy { font-size: 1.25cqw; }
+      .node strong { font-size: 1.4cqw; }
+      .node small { font-size: 1.08cqw; }
+      .controls { gap: 5px; }
+      .control-btn { min-height: 34px; padding: .45em .7em; font-size: 10px; }
+      .dots { gap: 4px; }
+      .dot { width: 7px; height: 7px; }
+      .counter { min-width: 47px; font-size: 10px; }
+      .progress-wrap { width: 26vw; }
+    }
+    @media (max-height: 560px) {
+      .deck { height: calc(100svh - 86px); width: auto; max-height: none; }
+      .presentation { gap: 7px; padding: 8px; }
+      .slide { padding-top: 3cqw; padding-bottom: 2cqw; gap: 1.4cqw; }
+    }
+    .presentation:fullscreen { gap: 8px; padding: 8px; background: #eaf1ef; }
+    .presentation:fullscreen .deck { width: min(98vw, calc((100svh - 70px) * 1.7778)); max-height: calc(100svh - 70px); border-radius: 12px; }
+    @media print {
+      body { overflow: visible; background: white; }
+      .presentation { display: block; padding: 0; }
+      .controls { display: none !important; }
+      .deck { width: 100%; max-height: none; overflow: visible; border: 0; border-radius: 0; box-shadow: none; }
+      .slide, .slide.active { position: relative; display: grid !important; width: 100%; aspect-ratio: 16 / 9; break-after: page; page-break-after: always; }
+      .slide:last-child { break-after: auto; page-break-after: auto; }
+    }
+  </style>
+</head>
+<body>
+  <div class="presentation" id="presentation">
+    <main class="deck" id="deck" aria-label="Bài trình chiếu song ngữ: Từ LLM đến AI Agent / Bilingual presentation: From LLM to AI Agent">
+
+      <section class="slide cover active" aria-labelledby="s1-title" aria-hidden="false">
+        <header class="masthead">
+          <div class="brand"><span class="brand-mark">RD</span><span class="brand-name">R&amp;DTech<small>KHÓA HỌC AI AGENT · AI AGENT COURSE</small></span></div>
+          <span class="unit-tag">UNIT 01 · VIDEO 01 / BÀI 1 · VIDEO 01</span>
+        </header>
+        <div class="cover-grid">
+          <div class="title-block">
+            <p class="eyebrow">KIẾN TRÚC AI AGENT · AI AGENT ARCHITECTURE</p>
+            <h1 id="s1-title">Từ LLM đến AI Agent<span class="en-title">From LLM to AI Agent</span></h1>
+            <p class="lede">LLM đề xuất. Runtime điều phối. Công cụ thực thi.<span class="en">The model proposes. The runtime orchestrates. Tools execute.</span></p>
+            <div class="pill" style="margin-top:1.4cqw">38 PHÚT · 38 MINUTES</div>
+          </div>
+          <div class="cover-visual">
+            <img class="hero-art" src="assets/illustrations/ai-agent-hero.png" alt="Khối AI Agent trong sắc xanh lục và teal / Emerald and teal AI Agent cube">
+          </div>
+        </div>
+        <footer class="slide-foot"><span>R&amp;DTECH · HỌC SÂU VỀ AI AGENT / AI AGENT DEEP DIVE</span><span class="foot-line"></span><span class="page">01</span></footer>
+      </section>
+
+      <section class="slide" aria-labelledby="s2-title" aria-hidden="true">
+        <header class="masthead"><div class="brand"><span class="brand-mark">RD</span><span class="brand-name">R&amp;DTech<small>AI AGENT COURSE · KHÓA HỌC AI AGENT</small></span></div><span class="unit-tag">LỘ TRÌNH · COURSE MAP</span></header>
+        <div class="title-block"><p class="eyebrow">4 UNIT · 4 HỌC PHẦN</p><h2 id="s2-title">Bản đồ khóa học<span class="en-title">Course roadmap</span></h2><p class="lede">Từ kiến trúc nền tảng đến vận hành Agent an toàn.<span class="en">From core architecture to secure agent operations.</span></p></div>
+        <div class="grid-4 course-map">
+          <article class="node"><div class="unit-number">01</div><h3>Kiến trúc AI Agent<span class="en">AI Agent Architecture</span></h3><p class="body-copy">LLM · vòng lặp · gọi công cụ · điều phối<span class="en">LLM · agent loop · tool calling · orchestration</span></p></article>
+          <article class="node"><div class="unit-number">02</div><h3>Context, RAG &amp; Tool Harness<span class="en">Context, RAG &amp; Tool Harness</span></h3><p class="body-copy">Truy xuất · grounding · tích hợp công cụ<span class="en">Retrieval · grounding · tool integration</span></p></article>
+          <article class="node"><div class="unit-number">03</div><h3>Orchestration &amp; Evaluation<span class="en">Orchestration &amp; Evaluation</span></h3><p class="body-copy">Workflow · phê duyệt · đánh giá<span class="en">Workflows · approvals · evaluation</span></p></article>
+          <article class="node"><div class="unit-number">04</div><h3>Security, Governance &amp; AgentOps<span class="en">Security, Governance &amp; AgentOps</span></h3><p class="body-copy">Quyền truy cập · log · quan sát<span class="en">Access control · logs · observability</span></p></article>
+        </div>
+        <div class="callout course-note"><span class="callout-bar"></span><p>Mỗi Unit kết hợp lý thuyết và thực hành Python.<small>Every unit combines theory with Python practice.</small></p></div>
+        <footer class="slide-foot"><span>UNIT 01 · KIẾN TRÚC AI AGENT / AI AGENT ARCHITECTURE</span><span class="foot-line"></span><span class="page">02</span></footer>
+      </section>
+
+      <section class="slide" aria-labelledby="s3-title" aria-hidden="true">
+        <header class="masthead"><div class="brand"><span class="brand-mark">RD</span><span class="brand-name">R&amp;DTech<small>AI AGENT COURSE · KHÓA HỌC AI AGENT</small></span></div><span class="unit-tag">UNIT 01 · 2 VIDEO / HỌC PHẦN 1 · 2 VIDEOS</span></header>
+        <div class="title-block"><p class="eyebrow">TỪ NỀN TẢNG ĐẾN RUNTIME · FOUNDATIONS TO RUNTIME</p><h2 id="s3-title">Hai video, một bức tranh kiến trúc<span class="en-title">Two videos, one architecture map</span></h2><p class="lede">Video 01 giới thiệu hệ thống Agent; Video 02 đi sâu vào Harness và Runtime.<span class="en">Video 01 introduces the agent system; Video 02 explores its harness and runtime.</span></p></div>
+        <div class="stack">
+          <article class="video-card"><div class="video-no">01</div><div><h3>Từ LLM đến kiến trúc AI Agent<span class="en">From LLM to AI Agent Architecture</span></h3><p>Chatbot · workflow · agent loop · ReAct · tool calling<small>Chatbots · workflows · agent loop · ReAct · tool calling</small></p></div></article>
+          <article class="video-card"><div class="video-no">02</div><div><h3>Agent Harness &amp; Runtime<span class="en">Agent Harness &amp; Runtime</span></h3><p>State · execution loop · giới hạn thực thi · trace<small>State · execution loop · execution limits · traces</small></p></div></article>
+        </div>
+        <footer class="slide-foot"><span>TRỌNG TÂM VIDEO 01: AI AGENT LÀ MỘT HỆ THỐNG / VIDEO 01 FOCUS: AN AI AGENT IS A SYSTEM</span><span class="foot-line"></span><span class="page">03</span></footer>
+      </section>
+
+      <section class="slide" aria-labelledby="s4-title" aria-hidden="true">
+        <header class="masthead"><div class="brand"><span class="brand-mark">RD</span><span class="brand-name">R&amp;DTech<small>UNIT 01 · VIDEO 01</small></span></div><span class="unit-tag">TỪ LLM ĐẾN AGENT · THE SHIFT</span></header>
+        <div class="title-block"><p class="eyebrow">MỘT MODEL CHƯA PHẢI LÀ CẢ HỆ THỐNG · A MODEL IS NOT THE WHOLE SYSTEM</p><h2 id="s4-title">LLM tạo nội dung; Agent hoàn thành nhiệm vụ<span class="en-title">LLMs generate; agents complete tasks</span></h2></div>
+        <div>
+          <div class="transition-grid">
+            <article class="node llm-card"><h3>LLM<span class="en">Language model</span></h3><div class="core-dot">AI</div><p class="body-copy">Nhận input → sinh output<span class="en">Input → generated output</span></p></article>
+            <div class="arrow" aria-hidden="true">→</div>
+            <article class="agent-card"><div class="agent-card-head"><div class="core-dot">AG</div><h3>Hệ thống Agent<span class="en">Agent system</span></h3></div><div class="agent-card-body"><img class="architecture-art" src="assets/illustrations/agent-architecture.png" alt="Sơ đồ hệ thống AI Agent với LLM, runtime, context, tools và environment / AI Agent system with LLM, runtime, context, tools, and environment"><div class="agent-parts"><div>NGỮ CẢNH<small>CONTEXT</small></div><div>CÔNG CỤ<small>TOOLS</small></div><div>RUNTIME<small>ORCHESTRATION</small></div><div>MÔI TRƯỜNG<small>ENVIRONMENT</small></div></div></div></article>
+          </div>
+          <div class="callout transition-caption"><span class="callout-bar"></span><p>Khả năng hành động đến từ hệ thống và quyền được cấp.<small>Actions come from the surrounding system and its granted permissions.</small></p></div>
+        </div>
+        <footer class="slide-foot"><span>MODEL ĐỀ XUẤT · HỆ THỐNG ĐIỀU PHỐI VÀ THỰC THI / MODEL PROPOSES · SYSTEM ORCHESTRATES AND EXECUTES</span><span class="foot-line"></span><span class="page">04</span></footer>
+      </section>
+
+      <section class="slide" aria-labelledby="s5-title" aria-hidden="true">
+        <header class="masthead"><div class="brand"><span class="brand-mark">RD</span><span class="brand-name">R&amp;DTech<small>UNIT 01 · VIDEO 01</small></span></div><span class="unit-tag">RANH GIỚI CỦA LLM · LLM BOUNDARIES</span></header>
+        <div class="title-block"><p class="eyebrow">ĐẦU VÀO → MODEL → ĐẦU RA / INPUT → MODEL → OUTPUT</p><h2 id="s5-title">LLM xử lý đầu vào và tạo đầu ra<span class="en-title">LLMs transform inputs into outputs</span></h2></div>
+        <div class="stack">
+          <div class="io-row">
+            <article class="node io-card"><h3>Đầu vào<span class="en">Input</span></h3><div class="io-list"><span>Văn bản · Text</span><span>Mã nguồn · Code</span><span>Lịch sử · History</span></div></article>
+            <div class="arrow" aria-hidden="true">→</div>
+            <article class="node io-card" style="display:grid;place-content:center;text-align:center;background:linear-gradient(145deg,#e9fbf2,#effcff)"><div class="core-dot" style="margin:auto">LLM</div><p class="body-copy">Suy luận và sinh token<span class="en">Reasoning and token generation</span></p></article>
+            <div class="arrow" aria-hidden="true">→</div>
+            <article class="node io-card"><h3>Đầu ra<span class="en">Output</span></h3><div class="io-list"><span>Văn bản · Text</span><span>JSON · dữ liệu có cấu trúc / structured data</span><span>Yêu cầu gọi tool · Tool request</span></div></article>
+          </div>
+          <div class="limitations">
+            <div class="limit">Không tự có quyền truy cập<small>No automatic external access</small></div>
+            <div class="limit">Không tự thực thi hành động<small>Does not execute actions by itself</small></div>
+            <div class="limit">Không tự quản lý vòng lặp<small>Does not manage its own execution loop</small></div>
+          </div>
+        </div>
+        <footer class="slide-foot"><span>YÊU CẦU TOOL ≠ TOOL ĐÃ ĐƯỢC THỰC THI / A TOOL REQUEST ≠ AN EXECUTED TOOL</span><span class="foot-line"></span><span class="page">05</span></footer>
+      </section>
+
+      <section class="slide" aria-labelledby="s6-title" aria-hidden="true">
+        <header class="masthead"><div class="brand"><span class="brand-mark">RD</span><span class="brand-name">R&amp;DTech<small>UNIT 01 · VIDEO 01</small></span></div><span class="unit-tag">SO SÁNH CÁCH ĐIỀU KHIỂN · CONTROL PATTERNS</span></header>
+        <div class="title-block"><p class="eyebrow">AI CHỌN BƯỚC TIẾP THEO? · WHO CHOOSES THE NEXT STEP?</p><h2 id="s6-title">Chatbot vs Workflow vs Agent<span class="en-title">Three patterns, three kinds of control</span></h2></div>
+        <div>
+          <div class="grid-3">
+            <article class="compare-card"><div class="compare-tagline">HỎI – ĐÁP · Q&amp;A</div><h3>Chatbot<span class="en">Chatbot</span></h3><div class="mini-flow"><span>User</span><b>→</b><span>LLM</span><b>→</b><span>Answer</span></div><p>Ứng dụng hoặc người dùng đưa yêu cầu tiếp theo.<small>The app or user supplies the next prompt.</small></p></article>
+            <article class="compare-card"><div class="compare-tagline">LUỒNG ĐỊNH SẴN · FIXED FLOW</div><h3>Workflow<span class="en">Workflow</span></h3><div class="mini-flow"><span>Bước 1</span><b>→</b><span>Bước 2</span><b>→</b><span>Bước 3</span></div><p>Code chọn bước tiếp theo theo trình tự đã thiết kế.<small>Code selects the next step from a predefined sequence.</small></p></article>
+            <article class="compare-card featured"><div class="compare-tagline">LỰA CHỌN TRONG GIỚI HẠN · BOUNDED CHOICE</div><h3>Agent<span class="en">Agent</span></h3><div class="mini-flow"><span>Decide</span><b>→</b><span>Act</span><b>→</b><span>Observe</span></div><p>Model chọn hành động phù hợp trong phạm vi cho phép.<small>The model chooses an allowed action based on what it observes.</small></p></article>
+          </div>
+          <p class="body-copy" style="margin-top:1cqw;text-align:center;font-weight:700">Ứng dụng thực tế có thể kết hợp workflow cố định và quyết định của Agent.<span class="en">Real applications can combine fixed workflows with agent decisions.</span></p>
+        </div>
+        <footer class="slide-foot"><span>KHÁC BIỆT CỐT LÕI: AI QUYẾT ĐỊNH BƯỚC TIẾP THEO / CORE DIFFERENCE: WHO DECIDES THE NEXT STEP</span><span class="foot-line"></span><span class="page">06</span></footer>
+      </section>
+
+      <section class="slide" aria-labelledby="s7-title" aria-hidden="true">
+        <header class="masthead"><div class="brand"><span class="brand-mark">RD</span><span class="brand-name">R&amp;DTech<small>UNIT 01 · VIDEO 01</small></span></div><span class="unit-tag">MÔ HÌNH KHÁI NIỆM · CONCEPTUAL MODEL</span></header>
+        <div class="title-block"><p class="eyebrow">NHÌN AGENT NHƯ MỘT HỆ THỐNG · THINK IN SYSTEMS</p><h2 id="s7-title">Điều gì biến LLM thành Agent?<span class="en-title">What turns an LLM into an agent?</span></h2></div>
+        <div class="stack" style="align-content:center">
+          <div class="equation">
+            <div class="equation-part"><span class="symbol">AG</span><strong>HỆ THỐNG AGENT</strong><small>AGENT SYSTEM</small></div><div class="eq">=</div>
+            <div class="equation-part"><span class="symbol">AI</span><strong>LLM</strong><small>Suy luận · Reasoning</small></div>
+            <div class="equation-part"><span class="symbol">CTX</span><strong>Context</strong><small>Ngữ cảnh · Context</small></div>
+            <div class="equation-part"><span class="symbol">↗</span><strong>Tools</strong><small>Công cụ · Tools</small></div>
+            <div class="equation-part"><span class="symbol">↻</span><strong>Runtime</strong><small>Điều phối · Orchestration</small></div>
+            <div class="equation-part"><span class="symbol">◎</span><strong>Environment</strong><small>Môi trường · Environment</small></div>
+          </div>
+          <div class="callout"><span class="callout-bar"></span><p>Đây là khung tư duy để phân tích hệ thống, không phải định nghĩa duy nhất.<small>This is a framework for analyzing systems, not a universal definition.</small></p></div>
+        </div>
+        <footer class="slide-foot"><span>LLM + NGỮ CẢNH + CÔNG CỤ + RUNTIME + MÔI TRƯỜNG / LLM + CONTEXT + TOOLS + RUNTIME + ENVIRONMENT</span><span class="foot-line"></span><span class="page">07</span></footer>
+      </section>
+
+      <section class="slide" aria-labelledby="s8-title" aria-hidden="true">
+        <header class="masthead"><div class="brand"><span class="brand-mark">RD</span><span class="brand-name">R&amp;DTech<small>UNIT 01 · VIDEO 01</small></span></div><span class="unit-tag">SƠ ĐỒ HỆ THỐNG · SYSTEM MAP</span></header>
+        <div class="title-block"><p class="eyebrow">AI ĐỀ XUẤT · RUNTIME KIỂM SOÁT · TOOL THỰC THI</p><h2 id="s8-title">Kiến trúc AI Agent<span class="en-title">AI Agent architecture</span></h2></div>
+        <div class="stack" style="align-content:center">
+          <div class="architecture">
+            <article class="node arch-app"><strong>User / Application</strong><small>Người dùng / Ứng dụng gửi yêu cầu · Sends the task</small></article>
+            <article class="node arch-llm"><strong>LLM</strong><small>Đề xuất câu trả lời hoặc hành động · Proposes an answer or action</small></article>
+            <article class="node arch-runtime"><strong>Agent Runtime / Harness</strong><small>Điều phối · kiểm tra · quản lý vòng lặp<br>Orchestrates · validates · manages the loop</small></article>
+            <article class="node arch-tools"><strong>Tools / Executor</strong><small>Gọi hàm hoặc API được cho phép · Runs permitted functions or APIs</small></article>
+            <article class="node arch-context"><strong>Context / Data</strong><small>Lịch sử · tài liệu · trạng thái / History · documents · state</small></article>
+            <article class="node arch-env"><strong>Environment</strong><small>Tệp · cơ sở dữ liệu · API · dịch vụ<br>Files · databases · APIs · services</small></article>
+            <span class="arch-connector conn-app" aria-hidden="true">↕</span>
+            <span class="arch-connector conn-llm" aria-hidden="true">↔</span>
+            <span class="arch-connector conn-tools" aria-hidden="true">↔</span>
+          </div>
+          <p class="arch-caption">Model đề xuất hành động; Runtime kiểm tra và điều phối; Executor thực thi.<small>The model proposes; the runtime validates and orchestrates; the executor runs the action.</small></p>
+        </div>
+        <footer class="slide-foot"><span>ĐỀ XUẤT ≠ THỰC THI · PROPOSAL ≠ EXECUTION</span><span class="foot-line"></span><span class="page">08</span></footer>
+      </section>
+
+      <section class="slide" aria-labelledby="s9-title" aria-hidden="true">
+        <header class="masthead"><div class="brand"><span class="brand-mark">RD</span><span class="brand-name">R&amp;DTech<small>UNIT 01 · VIDEO 01</small></span></div><span class="unit-tag">VÒNG THỰC THI · EXECUTION LOOP</span></header>
+        <div class="title-block"><p class="eyebrow">RUNTIME DUY TRÌ VÒNG LẶP · THE RUNTIME RUNS THE LOOP</p><h2 id="s9-title">Agent Loop<span class="en-title">The agent execution loop</span></h2><p class="lede">Vòng lặp tiếp tục đến khi có câu trả lời cuối, cần thêm thông tin hoặc chạm giới hạn.<span class="en">The loop continues until a final answer, more information, or an execution limit.</span></p></div>
+        <div class="stack" style="align-content:center">
+          <div class="loop-grid">
+            <article class="loop-step"><span class="step-n">01</span><strong>Nhận yêu cầu<small>Receive request</small></strong><small>Người dùng nêu nhiệm vụ<br>User states the task</small></article>
+            <article class="loop-step"><span class="step-n">02</span><strong>Tạo context<small>Build context</small></strong><small>Lịch sử và dữ liệu liên quan<br>Relevant history and data</small></article>
+            <article class="loop-step"><span class="step-n">03</span><strong>Gọi model<small>Call model</small></strong><small>Runtime gửi prompt<br>Runtime sends the prompt</small></article>
+            <article class="loop-step"><span class="step-n">04</span><strong>Nhận phản hồi<small>Receive response</small></strong><small>Câu trả lời hoặc yêu cầu tool<br>Answer or tool request</small></article>
+            <article class="loop-step"><span class="step-n">05</span><strong>Thực thi tool<small>Execute tool</small></strong><small>Executor gọi công cụ<br>Executor runs the tool</small></article>
+            <article class="loop-step"><span class="step-n">06</span><strong>Quan sát kết quả<small>Observe result</small></strong><small>Thêm kết quả vào context<br>Add the result to context</small></article>
+            <article class="loop-step"><span class="step-n">07</span><strong>Tiếp tục hoặc dừng<small>Continue or stop</small></strong><small>Đánh giá điều kiện kết thúc<br>Check the stop condition</small></article>
+            <article class="loop-step end"><span class="step-n">08</span><strong>Trả lời cuối khi dừng<small>Return the final answer when done</small></strong><small>Trả kết quả cho người dùng<br>Return the result to the user</small></article>
+          </div>
+          <p class="loop-rule">Nếu tiếp tục, Runtime gửi context đã cập nhật lại cho Model.<small>If continuing, the runtime sends updated context back to the model.</small></p>
+        </div>
+        <footer class="slide-foot"><span>ĐIỂM ĐIỀU KHIỂN NẰM Ở RUNTIME / THE RUNTIME HOLDS THE CONTROL POINT</span><span class="foot-line"></span><span class="page">09</span></footer>
+      </section>
+
+      <section class="slide" aria-labelledby="s10-title" aria-hidden="true">
+        <header class="masthead"><div class="brand"><span class="brand-mark">RD</span><span class="brand-name">R&amp;DTech<small>UNIT 01 · VIDEO 01</small></span></div><span class="unit-tag">MẪU HÀNH VI · BEHAVIOR PATTERN</span></header>
+        <div class="title-block"><p class="eyebrow">REASON → ACT → OBSERVE</p><h2 id="s10-title">ReAct: Reasoning, Acting, Observing<span class="en-title">A loop for deciding, acting, and observing</span></h2><p class="lede">Ví dụ: tra cứu tài liệu để trả lời một câu hỏi về công ty.<span class="en">Example: search documents to answer a question about a company.</span></p></div>
+        <div class="stack" style="align-content:center">
+          <div class="react-grid">
+            <article class="react-card"><div class="step-no">01</div><h3>Reason<span class="en">Chọn bước tiếp theo · Choose the next step</span></h3><p>Cần tra cứu tài liệu để có căn cứ.<small>Search documents to find supporting evidence.</small></p><div class="react-arrow">↓</div></article>
+            <article class="react-card"><div class="step-no">02</div><h3>Act<span class="en">Gọi công cụ · Call a tool</span></h3><p>Yêu cầu gọi <code>search_documents</code>.<small>Request the <code>search_documents</code> tool.</small></p><div class="react-arrow">↓</div></article>
+            <article class="react-card"><div class="step-no">03</div><h3>Observe<span class="en">Nhận kết quả · Read the result</span></h3><p>Kiểm tra tài liệu; tìm tiếp hoặc tổng hợp.<small>Review the documents; search again or summarize.</small></p></article>
+          </div>
+          <div class="callout"><span class="callout-bar"></span><p>Reason mô tả quyết định bước tiếp theo; không cần công khai suy luận nội bộ.<small>Reason describes the next-step decision; private chain-of-thought need not be exposed.</small></p></div>
+        </div>
+        <footer class="slide-foot"><span>QUYẾT ĐỊNH · HÀNH ĐỘNG · QUAN SÁT / DECIDE · ACT · OBSERVE</span><span class="foot-line"></span><span class="page">10</span></footer>
+      </section>
+
+      <section class="slide" aria-labelledby="s11-title" aria-hidden="true">
+        <header class="masthead"><div class="brand"><span class="brand-mark">RD</span><span class="brand-name">R&amp;DTech<small>UNIT 01 · VIDEO 01</small></span></div><span class="unit-tag">YÊU CẦU CÓ CẤU TRÚC · STRUCTURED REQUEST</span></header>
+        <div class="title-block"><p class="eyebrow">YÊU CẦU GỌI TOOL ≠ THỰC THI TOOL / JSON TOOL REQUEST ≠ TOOL EXECUTION</p><h2 id="s11-title">Tool calling diễn ra thế nào?<span class="en-title">How does tool calling work?</span></h2></div>
+        <div class="tool-layout">
+          <div class="code-panel"><div class="code-head"><span>YÊU CẦU GỌI TOOL · TOOL REQUEST</span><span>JSON</span></div><pre aria-label="Ví dụ yêu cầu gọi tool bằng JSON"><code>{
+  <span class="json-key">"name"</span>: <span class="json-string">"search_documents"</span>,
+  <span class="json-key">"arguments"</span>: {
+    <span class="json-key">"query"</span>: <span class="json-string">"AI Agent architecture"</span>
+  }
+}</code></pre></div>
+          <div class="tool-side"><img class="tool-art" src="assets/illustrations/tool-execution.png" alt="Luồng gọi tool: model, xác thực, thực thi và trả kết quả / Tool flow: model, validation, execution, and result">
+            <div class="tool-steps">
+            <div class="tool-step"><b>1</b><div><strong>Model tạo yêu cầu<span class="en">Model emits a request</span></strong><small>Tên tool và tham số · Tool name and arguments</small></div></div>
+            <div class="tool-step"><b>2</b><div><strong>Runtime kiểm tra quyền<span class="en">Runtime checks permission</span></strong><small>Schema · policy · phạm vi / Schema · policy · scope</small></div></div>
+            <div class="tool-step"><b>3</b><div><strong>Executor gọi hàm / API<span class="en">Executor runs the function or API</span></strong><small>Thực thi hành động được duyệt · Runs the approved action</small></div></div>
+            <div class="tool-step"><b>4</b><div><strong>Kết quả về context<span class="en">Result returns to context</span></strong><small>Model tiếp tục xử lý · Model continues</small></div></div>
+            </div>
+          </div>
+        </div>
+        <footer class="slide-foot"><span>CHỈ CÓ KẾT QUẢ THỰC THI MỚI XÁC NHẬN TOOL ĐÃ CHẠY / EXECUTION EVIDENCE CONFIRMS THAT A TOOL RAN</span><span class="foot-line"></span><span class="page">11</span></footer>
+      </section>
+
+      <section class="slide" aria-labelledby="s12-title" aria-hidden="true">
+        <header class="masthead"><div class="brand"><span class="brand-mark">RD</span><span class="brand-name">R&amp;DTech<small>UNIT 01 · VIDEO 01</small></span></div><span class="unit-tag">DEMO · PYTHON</span></header>
+        <div class="title-block"><p class="eyebrow">MỘT YÊU CẦU ĐI QUA AGENT · ONE REQUEST THROUGH AN AGENT</p><h2 id="s12-title">Quan sát luồng thực thi<span class="en-title">Follow the execution flow</span></h2><p class="lede">Yêu cầu: “Tổng hợp năng lực AI của công ty từ tài liệu đã có.”<span class="en">Request: “Summarize the company’s AI capabilities from the available documents.”</span></p></div>
+        <div class="stack" style="align-content:center">
+          <div class="demo-flow">
+            <article class="demo-step"><div class="number">01</div><h3>Nhận câu hỏi<span class="en">Receive the request</span></h3><p>Runtime tạo context và gửi prompt.<small>The runtime builds context and sends the prompt.</small></p></article>
+            <article class="demo-step"><div class="number">02</div><h3>Chọn công cụ<span class="en">Choose a tool</span></h3><p>Model yêu cầu <code>search_documents</code>.<small>The model requests <code>search_documents</code>.</small></p></article>
+            <article class="demo-step"><div class="number">03</div><h3>Thực thi, quan sát<span class="en">Execute and observe</span></h3><p>Executor trả về tài liệu tìm được.<small>The executor returns the retrieved documents.</small></p></article>
+            <article class="demo-step"><div class="number">04</div><h3>Tổng hợp có căn cứ<span class="en">Summarize with evidence</span></h3><p>Model tổng hợp nội dung dựa trên kết quả.<small>The model summarizes from the observed results.</small></p></article>
+          </div>
+          <div class="trace-line" aria-label="Trace minh họa: yêu cầu, thực thi, kết quả, câu trả lời"><span>YÊU CẦU · REQUEST</span><b>→</b><span>THỰC THI · EXECUTION</span><b>→</b><span>KẾT QUẢ TOOL · TOOL RESULT</span><b>→</b><span>CÂU TRẢ LỜI · FINAL ANSWER</span></div>
+          <div class="callout"><span class="callout-bar"></span><p>Đừng chỉ đọc câu trả lời cuối; hãy kiểm tra trace và kết quả tool.<small>Do not inspect only the final answer; verify the trace and tool result.</small></p></div>
+        </div>
+        <footer class="slide-foot"><span>LLM ĐỀ XUẤT · RUNTIME KIỂM TRA · EXECUTOR THỰC THI / MODEL PROPOSES · RUNTIME VALIDATES · EXECUTOR RUNS</span><span class="foot-line"></span><span class="page">12</span></footer>
+      </section>
+    </main>
+
+    <nav class="controls" aria-label="Điều khiển trình chiếu / Presentation controls">
+      <button class="control-btn" id="prev" type="button" aria-label="Trang trước / Previous slide">← <span>Trước / Previous</span></button>
+      <div class="progress-wrap"><div class="progress-track" aria-hidden="true"><div class="progress-fill" id="progress"></div></div><output class="counter" id="counter" aria-live="polite">01 / 12</output></div>
+      <div class="dots" id="dots" aria-label="Chọn trang / Choose a slide"></div>
+      <button class="control-btn" id="next" type="button" aria-label="Trang tiếp / Next slide"><span>Tiếp / Next</span> →</button>
+      <button class="control-btn" id="fullscreen" type="button" aria-label="Toàn màn hình / Fullscreen">⛶ <span>Toàn màn hình / Fullscreen</span></button>
+    </nav>
+    <p class="sr-only" id="keyboard-help">Dùng phím mũi tên trái/phải, Page Up/Page Down, Home hoặc End để chuyển trang. Use the left/right arrows, Page Up/Page Down, Home, or End to navigate.</p>
+  </div>
+  <script>
+    (() => {
+      const slides = [...document.querySelectorAll('.slide')];
+      const deck = document.getElementById('deck');
+      const presentation = document.getElementById('presentation');
+      const prev = document.getElementById('prev');
+      const next = document.getElementById('next');
+      const fullscreen = document.getElementById('fullscreen');
+      const counter = document.getElementById('counter');
+      const progress = document.getElementById('progress');
+      const dots = document.getElementById('dots');
+      let current = Math.max(0, Math.min(slides.length - 1, Number(location.hash.replace('#slide-', '')) - 1 || 0));
+
+      slides.forEach((_, index) => {
+        const dot = document.createElement('button');
+        dot.type = 'button';
+        dot.className = 'dot';
+        dot.setAttribute('aria-label', `Trang ${index + 1} / Slide ${index + 1}`);
+        dot.addEventListener('click', () => show(index));
+        dots.append(dot);
+      });
+      const dotButtons = [...dots.children];
+
+      function show(index, updateHash = true) {
+        current = Math.max(0, Math.min(slides.length - 1, index));
+        slides.forEach((slide, i) => {
+          const active = i === current;
+          slide.classList.toggle('active', active);
+          slide.setAttribute('aria-hidden', String(!active));
+        });
+        dotButtons.forEach((dot, i) => {
+          if (i === current) dot.setAttribute('aria-current', 'step');
+          else dot.removeAttribute('aria-current');
+        });
+        prev.disabled = current === 0;
+        next.disabled = current === slides.length - 1;
+        counter.value = `${String(current + 1).padStart(2, '0')} / ${String(slides.length).padStart(2, '0')}`;
+        counter.textContent = counter.value;
+        progress.style.width = `${((current + 1) / slides.length) * 100}%`;
+        if (updateHash) history.replaceState(null, '', `#slide-${current + 1}`);
+      }
+
+      prev.addEventListener('click', () => show(current - 1));
+      next.addEventListener('click', () => show(current + 1));
+      fullscreen.addEventListener('click', async () => {
+        try {
+          if (!document.fullscreenElement) await presentation.requestFullscreen();
+          else await document.exitFullscreen();
+        } catch { /* Fullscreen can be unavailable in embedded browsers. */ }
+      });
+      document.addEventListener('fullscreenchange', () => {
+        fullscreen.setAttribute('aria-pressed', String(Boolean(document.fullscreenElement)));
+      });
+      document.addEventListener('keydown', event => {
+        if (event.altKey || event.ctrlKey || event.metaKey) return;
+        if (['ArrowRight', 'PageDown', ' '].includes(event.key)) { event.preventDefault(); show(current + 1); }
+        else if (['ArrowLeft', 'PageUp'].includes(event.key)) { event.preventDefault(); show(current - 1); }
+        else if (event.key === 'Home') { event.preventDefault(); show(0); }
+        else if (event.key === 'End') { event.preventDefault(); show(slides.length - 1); }
+      });
+      window.addEventListener('hashchange', () => {
+        const index = Number(location.hash.replace('#slide-', '')) - 1;
+        if (Number.isInteger(index) && index >= 0 && index < slides.length) show(index, false);
+      });
+      show(current, false);
+      deck.setAttribute('aria-describedby', 'keyboard-help');
+    })();
+  </script>
+</body>
+</html>

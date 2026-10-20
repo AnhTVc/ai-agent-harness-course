@@ -1,0 +1,5 @@
+# Test and Python formatting tools. The lab runtime has no third-party dependencies.
+black==25.12.0
+coverage==7.16.0
+pytest==8.3.4
+pytest-cov==6.3.0

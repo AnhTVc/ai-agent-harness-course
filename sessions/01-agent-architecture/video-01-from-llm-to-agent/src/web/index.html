@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Agent Runtime Debugger | R&D Technology JSC</title>
+    <meta
+      name="description"
+      content="Execute and debug the Video 01 agent loop, one real boundary at a time."
+    />
+    <link rel="stylesheet" href="/style.css" />
+    <script src="/app.js" defer></script>
+  </head>
+  <body>
+    <header class="app-header">
+      <a class="brand" href="/">R&D<span>Agent Runtime Debugger</span></a
+      ><span class="course-tag">SESSION 01 / VIDEO 01</span
+      ><span class="header-end"
+        ><span class="connection-dot"></span> Python runtime · localhost</span
+      ><button id="help-toggle" class="quiet">How to debug</button>
+    </header>
+    <div class="controlbar">
+      <div class="run-indicator">
+        <span id="status-dot" class="status-dot"></span
+        ><strong id="debug-status">No active run</strong
+        ><span id="session-short">Create a paused run to begin</span>
+      </div>
+      <div class="transport">
+        <button id="step" disabled title="Execute one real boundary (F10)">
+          <span>↦</span> Step</button
+        ><button
+          id="continue"
+          class="primary"
+          disabled
+          title="Run until a breakpoint, pause, or stop (F8)"
+        >
+          <span>▶</span> Continue</button
+        ><button id="pause" disabled><span>Ⅱ</span> Pause</button
+        ><button id="stop" class="danger-button" disabled>
+          <span>■</span> Stop
+        </button>
+      </div>
+      <button id="setup-toggle" class="quiet">Hide setup</button
+      ><button id="export" class="quiet" disabled>Export trace ↓</button>
+    </div>
+    <div id="notice" class="notice" role="alert" hidden></div>
+    <div class="debug-layout">
+      <aside class="config-pane">
+        <div class="pane-heading">
+          <h2>Run configuration</h2>
+          <span class="small-label">NEW EXECUTION</span>
+        </div>
+        <form id="config-form">
+          <label for="prompt">User goal</label
+          ><textarea id="prompt" rows="4" maxlength="2000" required>
+Summarize the company AI capabilities.</textarea>
+          <div class="presets">
+            <button
+              type="button"
+              data-prompt="Explain the AI agent architecture in the documents."
+            >
+              Agent docs</button
+            ><button
+              type="button"
+              data-prompt="What is the current weather in Hanoi, Vietnam?"
+            >
+              Weather · Hanoi</button
+            ><button type="button" data-prompt="Calculate 1847 * (23 + 19) / 7">
+              Calculate</button
+            ><button
+              type="button"
+              data-prompt="Find information about submarine manufacturing."
+            >
+              No evidence</button
+            ><button type="button" data-prompt="Hello">Hello</button>
+          </div>
+          <label for="mode">Execution pattern</label
+          ><select id="mode">
+            <option value="agent">Agent loop</option>
+            <option value="workflow">Fixed workflow</option>
+            <option value="chatbot">Chatbot baseline</option>
+          </select>
+          <label for="provider">Model provider</label
+          ><select id="provider">
+            <option value="offline">Offline · rule-based</option>
+            <option value="ollama">Ollama · real local LLM</option>
+            <option value="cloudflare">
+              Cloudflare Workers AI · hosted LLM
+            </option>
+          </select>
+          <p id="provider-note" class="hint">
+            Deterministic teaching model. No real LLM inference.
+          </p>
+          <label for="fault">Component experiment</label
+          ><select id="fault">
+            <option value="none">Complete architecture</option>
+            <option value="no_specs">Remove tool specifications</option>
+            <option value="no_executor">Remove executor</option>
+            <option value="no_observation">Withhold observation</option>
+          </select>
+          <div class="config-row">
+            <div>
+              <label for="max-steps">Model-call limit</label
+              ><select id="max-steps">
+                <option>2</option>
+                <option selected>4</option>
+                <option>6</option>
+              </select>
+            </div>
+            <div>
+              <label for="pace">Continue pace</label
+              ><select id="pace">
+                <option value="0">Full speed</option>
+                <option value="350" selected>350 ms / step</option>
+                <option value="1000">1 s / step</option>
+              </select>
+            </div>
+          </div>
+          <button class="primary create-button" id="create" type="submit">
+            + Create paused run
+          </button>
+        </form>
+        <section class="breakpoint-section">
+          <div class="pane-heading">
+            <h2>Break before</h2>
+            <span class="breakpoint-icon">●</span>
+          </div>
+          <label
+            ><input id="break-model" type="checkbox" value="call_model" /> Model
+            call</label
+          ><label
+            ><input
+              id="break-tool"
+              type="checkbox"
+              value="execute_tool"
+              checked
+            />
+            Tool execution</label
+          ><label
+            ><input id="break-context" type="checkbox" value="observation" />
+            Observation → context</label
+          ><button id="apply-breakpoints" class="quiet" disabled>
+            Apply to paused run
+          </button>
+          <p class="hint">
+            Continue stops before the selected operation. Step executes that one
+            operation.
+          </p>
+        </section>
+        <section class="history-section">
+          <label for="run-history">Runs in this browser tab</label
+          ><select id="run-history">
+            <option value="">No runs yet</option>
+          </select>
+          <p class="hint">
+            Each run has isolated context. Idle runs expire after one hour; the
+            server retains at most 32.
+          </p>
+        </section>
+        <details class="about">
+          <summary>About this demo</summary>
+          <p>
+            ExampleCo documents are synthetic. This is a local lesson debugger,
+            not a company capability claim.
+          </p>
+          <p>
+            Provider/tool operations run in Python. The browser controls actual
+            execution; historical inspection does not execute anything.
+          </p>
+        </details>
+      </aside>
+      <main class="workspace">
+        <section class="flow-panel">
+          <div class="panel-toolbar">
+            <div>
+              <h1>Execution graph</h1>
+              <span id="execution-position">No code has executed.</span>
+            </div>
+            <div class="graph-legend">
+              <span class="legend-next">Next</span
+              ><span class="legend-done">Executed</span
+              ><span class="legend-inspect">Inspecting</span
+              ><span class="legend-excluded">Not used in this mode</span>
+            </div>
+          </div>
+          <!-- The mode banner explains who controls the path currently drawn below. -->
+          <div class="mode-banner" id="mode-banner" aria-live="polite">
+            <div class="mode-heading">
+              <span class="small-label">CONTROL PATTERN</span
+              ><strong id="mode-title">Agent loop</strong>
+            </div>
+            <div class="mode-detail">
+              <strong id="mode-decision">MODEL SELECTS THE NEXT ACTION</strong>
+              <p id="mode-description">
+                The model receives tool schemas, proposes an action, and
+                continues from the returned observation.
+              </p>
+            </div>
+            <div class="mode-facts">
+              <span id="mode-model">Model call: includes tool schemas</span
+              ><span id="mode-tools"
+                >Tools: model may request an allowlisted tool</span
+              ><span class="mode-note"
+                >Dimmed nodes are not part of this path.</span
+              >
+            </div>
+          </div>
+          <div class="graph-container">
+            <svg
+              id="runtime-graph"
+              viewBox="0 0 760 312"
+              role="group"
+              aria-label="Live agent architecture"
+            ></svg>
+          </div>
+          <div class="next-boundary">
+            <span class="small-label">NEXT OPERATION</span
+            ><strong id="next-label"
+              >Create a run, then Step or Continue.</strong
+            ><span id="next-source">—</span>
+          </div>
+          <div class="metrics">
+            <div>
+              <span>Model calls</span><strong id="model-count">0</strong>
+            </div>
+            <div>
+              <span>Executed tools</span><strong id="tool-count">0</strong>
+            </div>
+            <div>
+              <span>Context messages</span><strong id="message-count">0</strong>
+            </div>
+            <div>
+              <span>Recorded events</span><strong id="event-count">0</strong>
+            </div>
+          </div>
+        </section>
+        <section class="timeline-panel">
+          <div class="panel-toolbar">
+            <h2>Execution timeline <span id="timeline-count">0</span></h2>
+            <button id="follow-live" class="quiet" aria-pressed="true">
+              Following live
+            </button>
+          </div>
+          <div
+            id="timeline"
+            class="timeline"
+            role="list"
+            aria-label="Executed runtime events"
+          >
+            <div class="empty">
+              <span class="empty-symbol">↦</span
+              ><strong>Waiting at the starting line.</strong>
+              <p>
+                Create a run to inspect the initial state.<br />Step executes
+                code. Continue honors breakpoints.
+              </p>
+            </div>
+          </div>
+        </section>
+      </main>
+      <aside class="inspector-pane">
+        <div class="inspector-heading">
+          <span class="small-label">INSPECTOR</span
+          ><span id="inspection-mode">LIVE STATE</span>
+        </div>
+        <h2 id="inspect-title">Runtime state</h2>
+        <p id="inspect-description">
+          Select a graph node or an executed event to inspect it.
+        </p>
+        <div class="inspector-tabs" role="tablist" aria-label="Inspector views">
+          <button
+            id="tab-event"
+            role="tab"
+            aria-selected="true"
+            aria-controls="view-event"
+          >
+            Payload</button
+          ><button
+            id="tab-context"
+            role="tab"
+            aria-selected="false"
+            aria-controls="view-context"
+          >
+            Context</button
+          ><button
+            id="tab-source"
+            role="tab"
+            aria-selected="false"
+            aria-controls="view-source"
+          >
+            Source</button
+          ><button
+            id="tab-data"
+            role="tab"
+            aria-selected="false"
+            aria-controls="view-data"
+          >
+            Tools / Data
+          </button>
+        </div>
+        <div
+          id="view-event"
+          class="inspector-view"
+          role="tabpanel"
+          aria-labelledby="tab-event"
+        >
+          <div id="event-meta" class="event-meta">No event selected</div>
+          <pre id="payload">{ "status": "waiting_for_run" }</pre>
+        </div>
+        <div
+          id="view-context"
+          class="inspector-view"
+          role="tabpanel"
+          aria-labelledby="tab-context"
+          hidden
+        >
+          <div class="context-toolbar">
+            <button id="context-before" class="active">Before</button
+            ><button id="context-after">After</button
+            ><span id="context-count">0 messages</span>
+          </div>
+          <p id="context-diff" class="hint">
+            Context will change only when the runtime executes a boundary.
+          </p>
+          <div id="context-messages"></div>
+        </div>
+        <div
+          id="view-source"
+          class="inspector-view source-view"
+          role="tabpanel"
+          aria-labelledby="tab-source"
+          hidden
+        >
+          <div class="source-toolbar">
+            <select id="source-file" aria-label="Source file">
+              <option>runtime.py</option>
+              <option>providers.py</option>
+              <option>config.py</option>
+              <option>network.py</option>
+              <option>tools.py</option>
+              <option>debugger.py</option>
+              <option>server.py</option>
+              <option>architecture.py</option></select
+            ><span id="source-position">—</span>
+          </div>
+          <pre id="source-code"></pre>
+        </div>
+        <div
+          id="view-data"
+          class="inspector-view"
+          role="tabpanel"
+          aria-labelledby="tab-data"
+          hidden
+        >
+          <p class="hint">
+            Registered capabilities are dispatched by the Python allowlist.
+            External requests occur only when you Step the pending tool
+            operation.
+          </p>
+          <div id="tool-catalog"></div>
+          <h3 class="section-title">Synthetic document fixture</h3>
+          <div id="documents"></div>
+          <details class="schema-details">
+            <summary>Registered tool schemas</summary>
+            <pre id="tool-schema"></pre>
+          </details>
+        </div>
+        <section id="pending-editor" class="pending-editor" hidden>
+          <div class="pending-title">
+            <span class="breakpoint-icon">●</span>
+            <h3>Paused before tool execution</h3>
+          </div>
+          <p id="pending-call" class="hint"></p>
+          <label id="pending-label" for="pending-value">Tool argument</label
+          ><textarea id="pending-value" rows="2" maxlength="2000"></textarea
+          ><button id="save-query" class="primary">Apply argument edit</button>
+          <p class="hint">
+            Edits are audited. The original model request stays in the trace.
+            Then press Step.
+          </p>
+        </section>
+        <section class="output-section">
+          <div class="pane-heading">
+            <h2>Run output</h2>
+            <span id="result-status">NOT STARTED</span>
+          </div>
+          <p id="output" aria-live="polite">No final answer yet.</p>
+        </section>
+      </aside>
+    </div>
+    <dialog id="help">
+      <form method="dialog">
+        <button class="dialog-close" aria-label="Close help">×</button>
+      </form>
+      <h2>Debug actual execution</h2>
+      <ol>
+        <li><strong>Create paused run.</strong> No model or tool has run.</li>
+        <li>
+          <strong>Step (F10)</strong> executes one real boundary.
+          <strong>Continue (F8)</strong> runs until a breakpoint.
+        </li>
+        <li>
+          Keep <strong>Tool execution</strong> checked. Continue stops before
+          the handler, with zero tool calls.
+        </li>
+        <li>
+          Edit the pending tool argument, then Step to execute the handler.
+          Weather calls Open-Meteo; calculation runs locally. Step again to
+          append the observation.
+        </li>
+        <li>
+          Compare <strong>Context → Before / After</strong>. Open
+          <strong>Source</strong> for the Python implementation of the selected
+          tool.
+        </li>
+        <li>
+          Click timeline events to inspect history.
+          <strong>Following live</strong> returns to the current execution
+          position.
+        </li>
+      </ol>
+      <p>
+        Pause and Stop take effect between operations. An in-flight provider
+        call cannot be interrupted; no next boundary will execute after it
+        returns. Provider calls have a 60-second timeout.
+      </p>
+      <p class="hint">
+        Offline is rule-based. Ollama needs a local tool-capable model.
+        Cloudflare sends context to Workers AI and uses the account's model
+        quota.
+      </p>
+    </dialog>
+  </body>
+</html>

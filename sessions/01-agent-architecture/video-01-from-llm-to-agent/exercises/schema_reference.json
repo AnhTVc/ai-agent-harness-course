@@ -1,0 +1,22 @@
+{
+  "type": "function",
+  "function": {
+    "name": "search_documents",
+    "description": "Search synthetic course documents by topic. Returns source IDs and text, or an empty list. Read only.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "query": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000,
+          "description": "The document topic to look up, such as AI agents or evaluation."
+        }
+      },
+      "required": [
+        "query"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

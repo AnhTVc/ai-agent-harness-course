@@ -1,0 +1,2 @@
+# Optional trusted root certificates for HTTPS providers on Python installs without an OS CA store.
+certifi>=2024.2.2,<2027
